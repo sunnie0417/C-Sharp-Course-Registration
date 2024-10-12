@@ -1,0 +1,132 @@
+﻿@page
+@model RegistrationModel
+@{
+    ViewData["Title"] = "Registration";
+}
+
+<h1>@ViewData["Title"]</h1>
+<hr />
+
+<form method="get" id="studentForm">
+    <div class="form-group d-flex align-items-center">
+        <select asp-for="SelectedStudentId" asp-items="Model.StudentSelectList" id="studentSelect" class="form-control w-25">
+            <option value="">Choose a student...</option>
+        </select>
+    </div>
+    <input type="hidden" name="CourseSortOrder" value="@Model.CourseSortOrder" />
+    <input type="hidden" name="AcademicRecordSortOrder" value="@Model.AcademicRecordSortOrder" />
+</form>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger mt-3 w-75">
+        @Model.ErrorMessage
+    </div>
+}
+
+@if (Model.NoCoursesRegistered && string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-info mt-3 w-75">
+        The student has not registered any course. Select course(s) to register.
+    </div>
+}
+
+@if (Model.ShowRegistrationSuccess)
+{
+    <div class="alert alert-success mt-3 w-75">
+        The student has registered for the following course. You can enter or edit the grade.
+    </div>
+}
+
+@if (Model.ShowCourses)
+{
+    <form method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="SelectedStudentId" />
+
+        <hr />
+        <table class="table">
+            <thead>
+                <tr>
+                    @if (Model.AllowRegistration)
+                    {
+                        <th>
+                            <a asp-page="./Registration"
+                               asp-route-SelectedStudentId="@Model.SelectedStudentId"
+                               asp-route-CourseSortOrder="CourseCode">Course Code</a>
+                        </th>
+                        <th>
+                            <a asp-page="./Registration"
+                               asp-route-SelectedStudentId="@Model.SelectedStudentId"
+                               asp-route-CourseSortOrder="CourseTitle">Course Title</a>
+                        </th>
+                        <th>Register</th>
+                    }
+                    else
+                    {
+                        <th>
+                            <a asp-page="./Registration"
+                               asp-route-SelectedStudentId="@Model.SelectedStudentId"
+                               asp-route-AcademicRecordSortOrder="CourseCode">Course Code</a>
+                        </th>
+                        <th>
+                            <a asp-page="./Registration"
+                               asp-route-SelectedStudentId="@Model.SelectedStudentId"
+                               asp-route-AcademicRecordSortOrder="CourseTitle">Course Title</a>
+                        </th>
+                        <th>
+                            <a asp-page="./Registration"
+                               asp-route-SelectedStudentId="@Model.SelectedStudentId"
+                               asp-route-AcademicRecordSortOrder="Grade">Grade</a>
+                        </th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.AllowRegistration)
+                {
+                    @foreach (var course in Model.Courses!)
+                    {
+                        <tr>
+                            <td>@course.CourseCode</td>
+                            <td>@course.CourseTitle</td>
+                            <td>
+                                <input type="checkbox" name="SelectedCourses" value="@course.CourseCode" />
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    @foreach (var record in Model.RegisteredCourses!)
+                    {
+                        var course = Model.Courses!.FirstOrDefault(c => c.CourseCode == record.CourseCode);
+                        <tr>
+                            <td>@record.CourseCode</td>
+                            <td>@course?.CourseTitle</td>
+                            <td>
+                                <input type="text" name="Grades[@record.CourseCode]" value="@(Model.GetGrade(record.CourseCode))" class="form-control w-50" />
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+        @if (Model.AllowRegistration)
+        {
+            <button type="submit" asp-page-handler="StudentSelected" class="btn btn-primary">Register</button>
+        }
+        else
+        {
+            <button type="submit" asp-page-handler="SubmitGrades" class="btn btn-success">Submit Grades</button>
+        }
+    </form>
+}
+
+@section Scripts {
+    <script>
+        document.getElementById("studentSelect").addEventListener("change", function () {
+            document.getElementById("studentForm").submit();
+        });
+    </script>
+}
